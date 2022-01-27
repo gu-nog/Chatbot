@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[3]:
+# In[ ]:
 
 
 from chatterbot.trainers import ListTrainer
 from chatterbot import ChatBot
 
 
-# In[34]:
+# In[ ]:
 
 
 from datetime import datetime
+import requests
 
 atividades = []
+dolar = {}
 
 def get_comands(pre_resposta):
     data = datetime.now()
@@ -48,10 +50,19 @@ def get_comands(pre_resposta):
             print('My Bot: Hum, não achei essa tarefa na sua lista')
         _resposta = None
     
+    elif 'c{dolar}' in _resposta:
+        if dolar != {} and data.hour - dolar['salvamento'] < 1:
+            dolar_temp = dolar['valor']
+        else:    
+            dolar_temp = requests.get('https://economia.awesomeapi.com.br/last/USD-BRL').json()["USDBRL"]['bid']
+            dolar['valor'] = dolar_temp
+            dolar['salvamento'] = data.hour
+        _resposta = _resposta.replace('c{dolar}', dolar_temp)
+    
     return _resposta
 
 
-# In[35]:
+# In[ ]:
 
 
 bot = ChatBot('My bot')
@@ -63,13 +74,16 @@ conversa = ['Oi', 'Olá',
             'Você gosta de ler?', "Sim, meu livro favorito é Harry Potter",
             'Eu tenho uma atividade nova para fazer', 'Qual atividade?c{novaativ}',
             'Eu tenho alguma tarefa?', 'c{falartarefas}',
-            'Eu acabei uma tarefa!', 'c{acabartarefa}']
+            'Eu acabei uma tarefa!', 'c{acabartarefa}',
+            'Quanto está o dólar?', 'O dólar está c{dolar} reais']
 
 trainer = ListTrainer(bot)
 trainer.train(conversa)
 
 while True:
-    pergunta = input("Usuário: ")    
+    pergunta = input("Usuário: ") 
+    if pergunta == 'parar':
+        break
     resposta = bot.get_response(pergunta)
     if float(resposta.confidence) > 0.2:
         if get_comands(resposta) != None:
@@ -78,7 +92,13 @@ while True:
         print('My Bot: Ainda não sei responder esta pergunta')
 
 
-# In[12]:
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
